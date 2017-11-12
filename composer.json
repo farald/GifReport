@@ -1,0 +1,12 @@
+{
+  "name": "farald/GifReport",
+  "autoload": {
+    "psr-0" : {
+      "Farald\\GifReport" : "src"
+    }
+  },
+  "require": {
+    "lunakid/anim-gif": "^1.3",
+    "gregwar/image": "^2.0"
+  }
+}
