@@ -32,7 +32,7 @@ class GifReportContext extends RawMinkContext {
   protected $filePath = __DIR__ . '/../../output/';
   protected $doClearDownloadFolder = TRUE;
   protected $doGenerateGifAnim = TRUE;
-  protected $docTitle = "Tests for the ABC-Database";
+  protected $docTitle = "Test title";
 
   /**
    * Check if selenium driver.
