@@ -8,13 +8,16 @@ use Behat\Mink\Driver\Selenium2Driver;
 use Behat\MinkExtension\Context\RawMinkContext;
 use GifCreator\AnimGif;
 use Gregwar\Image\Image;
+use Composer\Autoload\ClassLoader;
+use Behat\Behat\Context\Context;
+use Behat\Testwork\ServiceContainer\Extension;
 
 /**
  * Class GifReportContext.
  *
  * @package \RegistreringssystemABC\Tests\Context
  */
-class GifReportContext extends RawMinkContext {
+class GifReportContext extends RawMinkContext implements Context {
 
   protected $linesTotal;
   protected $featureName;
@@ -27,12 +30,53 @@ class GifReportContext extends RawMinkContext {
   protected $setupStepPercentage;
 
   /**
-   * File paths, and other configuration.
+   * New filepaths, use these instead.
    */
-  protected $filePath = __DIR__ . '/../../output/';
+  protected $imageDir = NULL;
+  protected $animDir = NULL;
+  protected $fontsDir = __DIR__ . '/../../fonts/';
+
+
+
   protected $doClearDownloadFolder = TRUE;
   protected $doGenerateGifAnim = TRUE;
   protected $docTitle = "Test title";
+
+  /**
+   * GifReportContext constructor.
+   *
+   * @param $imageDir
+   *   The image directory, without trailing slash.
+   * @param $gifAnimDir
+   *   The gif anim directory, without trailing slash.
+   * @param null $vimeoDir
+   *   The vimeo directory, without trailing slash.
+   * @param null $vimeoUser
+   *   A vimeo username.
+   * @param null $vimeoPass
+   *   A vimeo password
+   * @param null $vimeoVideoId
+   *   The video ID to upload to upload to / override.
+   */
+  public function __construct($imageDir, $gifAnimDir, $vimeoDir = NULL, $vimeoUser = NULL, $vimeoPass = NULL, $vimeoVideoId = NULL) {
+    // Set a global screenshot count.
+    global $_screenShotCount;
+    $_screenShotCount = 0;
+    // Get current vendor dir.
+    $reflection = new \ReflectionClass(ClassLoader::class);
+    $vendorDir = dirname(dirname($reflection->getFileName()));
+    // Assume root dir.
+    $rootDir = str_replace('/vendor', '', $vendorDir);
+    $packageDir = $vendorDir . '/farald/gifreport';
+    $this->imageDir = $imageDir;
+    $this->gifAnimDir = $gifAnimDir;
+    $this->fontsDir = $packageDir . '/fonts/';
+    print_r([
+      'filePath' => $this->imageDir,
+      'filePathAnim' => $this->gifAnimDir,
+      'fontsDir' => $this->fontsDir,
+    ]);
+  }
 
   /**
    * Check if selenium driver.
@@ -88,31 +132,40 @@ class GifReportContext extends RawMinkContext {
    * @throws \Exception
    */
   public function generateFrontPageScreenshot(AfterStepScope $scope) {
+    error_reporting(E_ALL);
+    ini_set('error_reporting', E_ALL);
+    ini_set('display_errors',1);
+    print "generating fp screenshot..";
     global $_screenShotCount;
     $description = $scope->getFeature()->getDescription();
     if (function_exists('xdebug_break')) {
       return;
     }
     $fileName = str_pad($_screenShotCount, 3, '0', STR_PAD_LEFT) . '-' . time() . '-' . uniqid() . '.png';
-    $filePath = __DIR__ . '/../../output/';
+    $filePath = $this->imageDir;
     if (!is_writable($filePath)) {
+      throw new \Exception($this->fontsDir . 'OpenSans-Regular.ttf');
+
       mkdir($filePath);
     }
+    //throw new \Exception($this->fontsDir . 'OpenSans-Regular.ttf');
     $this->saveScreenshot($fileName, $filePath);
-    Image::open($filePath . $fileName)
+    print "attempting to open " . $filePath . '/' . $fileName;
+    $image = Image::open($filePath . '/' . $fileName)
       ->crop(0, 0, 1440, 1000)
       ->rectangle(0, 0, 1440, 1000, 0xffffff, TRUE)
-      ->write(__DIR__ . '/../../fonts/OpenSans-Bold.ttf', strtoupper($this->docTitle), 30, 80, 25, 0, 0x333333)
-      ->write(__DIR__ . '/../../fonts/OpenSans-Bold.ttf', strtoupper($this->featureName), 30, 150, 18, 0, 0x333333)
-      ->write(__DIR__ . '/../../fonts/OpenSans-Regular.ttf', $description, 30, 200, 16, 0, 0x333333)
+      ->write($this->fontsDir . 'OpenSans-Bold.ttf', strtoupper($this->docTitle), 30, 80, 25, 0, 0x333333)
+      ->write($this->fontsDir . 'OpenSans-Bold.ttf', strtoupper($this->featureName), 30, 150, 18, 0, 0x333333)
+      ->write($this->fontsDir . 'OpenSans-Regular.ttf', $description, 30, 200, 16, 0, 0x333333)
       ->rectangle(0, 900, 1440, 1000, 0xdddddd, TRUE)
       ->line(0, 900, 1440, 900, 0xbbbbbb)
       ->rectangle(1300, 900, 1440, 1000, 0xbbbbbb, TRUE)
       ->rectangle(0, 995, ((1300 / 100) * ($this->setupStepPercentage)) - 5, 1000, 0x666666, TRUE)
-      ->write(__DIR__ . '/../../fonts/OpenSans-Regular.ttf', 'Feature: ' . $this->featureName, 30, 940, 16, 0, 0x444444)
-      ->write(__DIR__ . '/../../fonts/OpenSans-Regular.ttf', "0-$this->stepPercentage % INIT SETUP", 30, 970, 12, 0, 0x444444)
-      ->save($filePath . $fileName);
+      ->write($this->fontsDir . 'OpenSans-Regular.ttf', 'Feature: ' . $this->featureName, 30, 940, 16, 0, 0x444444)
+      ->write($this->fontsDir . 'OpenSans-Regular.ttf', "0-$this->stepPercentage % INIT SETUP", 30, 970, 12, 0, 0x444444)
+      ->save($filePath . '/' . $fileName);
     $_screenShotCount++;
+
   }
 
   /**
@@ -151,7 +204,7 @@ class GifReportContext extends RawMinkContext {
     }
     $_screenShotCount++;
     $fileName = str_pad($_screenShotCount, 3, '0', STR_PAD_LEFT) . '-' . time() . '-' . uniqid() . '.png';
-    $filePath = $this->filePath;
+    $filePath = $this->imageDir;
     if (!is_writable($filePath)) {
       mkdir($filePath);
     }
@@ -166,26 +219,26 @@ class GifReportContext extends RawMinkContext {
     $text =
       $this->stepPercentage . ' % - ' .
       $this->stepKeyword . " " . $this->stepText;
-    Image::open($filePath . $fileName)
+    Image::open($filePath . '/' . $fileName)
       ->crop(0, 0, 1440, 1000)
       ->rectangle(0, 900, 1440, 1000, 0xdddddd, TRUE)
       ->rectangle(1300, 900, 1440, 1000, $result_color, TRUE)
       ->rectangle(0, 995, ((1300 / 100) * $this->stepPercentage), 1000, $result_color, TRUE)
       ->rectangle(0, 995, ((1300 / 100) * $this->setupStepPercentage) - 5, 1000, 0x666666, TRUE)
-      ->write(__DIR__ . '/../../fonts/OpenSans-Regular.ttf', $result_text, 1310, 970, 40, 0, 0xffffff)
+      ->write($this->fontsDir . 'OpenSans-Regular.ttf', $result_text, 1310, 970, 40, 0, 0xffffff)
       ->line(0, 900, 1440, 900, 0xbbbbbb)
-      ->write(__DIR__ . '/../../fonts/OpenSans-Regular.ttf', 'Feature: ' . $this->featureName, 30, 940, 16, 0, 0x444444)
-      ->write(__DIR__ . '/../../fonts/OpenSans-Regular.ttf', $text, 30, 970, 12, 0, $result_color)
-      ->save($filePath . $fileName);
+      ->write($this->fontsDir . 'OpenSans-Regular.ttf', 'Feature: ' . $this->featureName, 30, 940, 16, 0, 0x444444)
+      ->write($this->fontsDir . 'OpenSans-Regular.ttf', $text, 30, 970, 12, 0, $result_color)
+      ->save($filePath . '/' . $fileName);
   }
 
   /**
    * Clear screenshot folder.
    */
   public function clearScreenshotFolder() {
-    if ($this->doClearDownloadFolder) {
-      $filePath = $this->filePath;
-      $files = glob($filePath . '*');
+    if ($this->doClearDownloadFolder == TRUE) {
+      $filePath = $this->imageDir;
+      $files = glob($filePath . '/*');
       foreach ($files as $file) {
         if (is_file($file)) {
           unlink($file);
@@ -202,11 +255,17 @@ class GifReportContext extends RawMinkContext {
    * @AfterSuite
    */
   public static function createAnimFromScreenshots() {
+    // Look for a static var. If this is set, it is set by the construction of
+    // the main context class. We do this so we can use the settings from this
+    // very class.
     if (function_exists('xdebug_break')) {
       return;
     }
-    $filePath = __DIR__ . '/../../output/';
-    $anim_path = __DIR__ . '/../../anim/';
+    $reflection = new \ReflectionClass(ClassLoader::class);
+    $vendorDir = dirname(dirname($reflection->getFileName()));
+    $filePath = $vendorDir . '/../tests/output';
+    $anim_path = $vendorDir . '/../tests/anim';
+
     $frames = $filePath;
     $durations = [210];
     $anim = new AnimGif();
