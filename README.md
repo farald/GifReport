@@ -8,3 +8,18 @@ composer require farald/gifReport
 
 By default, it will export images from all steps run.
 Use this package on your local dvelopment to create a simple visual compilation of your work.
+
+To enable, configure your list of contexts in behat.yml:
+
+```yaml
+  suites:
+    default:
+      contexts:
+        - Farald\GifReport\GifReportContext:
+            params:
+              imageDir: "/full/path/to/empty/dir"
+              gifAnimDir: "/full/path/to/another/empty/dir"
+              projectTitle: "En tittel"
+```
+
+The image dir should be an empty directory, and it will be emptied every time you run behat.

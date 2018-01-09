@@ -10,7 +10,6 @@ use GifCreator\AnimGif;
 use Gregwar\Image\Image;
 use Composer\Autoload\ClassLoader;
 use Behat\Behat\Context\Context;
-use Behat\Testwork\ServiceContainer\Extension;
 
 /**
  * Class GifReportContext.
@@ -30,13 +29,12 @@ class GifReportContext extends RawMinkContext implements Context {
   protected $setupStepPercentage;
 
   /**
-   * New filepaths, use these instead.
+   * Filepaths.
    */
   protected $imageDir = NULL;
-  protected $animDir = NULL;
+  protected $gifAnimDir = NULL;
   protected $fontsDir = __DIR__ . '/../../fonts/';
-
-
+  protected $params = [];
 
   protected $doClearDownloadFolder = TRUE;
   protected $doGenerateGifAnim = TRUE;
@@ -45,37 +43,55 @@ class GifReportContext extends RawMinkContext implements Context {
   /**
    * GifReportContext constructor.
    *
-   * @param $imageDir
-   *   The image directory, without trailing slash.
-   * @param $gifAnimDir
-   *   The gif anim directory, without trailing slash.
-   * @param null $vimeoDir
-   *   The vimeo directory, without trailing slash.
-   * @param null $vimeoUser
-   *   A vimeo username.
-   * @param null $vimeoPass
-   *   A vimeo password
-   * @param null $vimeoVideoId
-   *   The video ID to upload to upload to / override.
+   * @see getDefaultParams().
+   *
+   * @param $params
+   *   An array of parameters.
    */
-  public function __construct($imageDir, $gifAnimDir, $vimeoDir = NULL, $vimeoUser = NULL, $vimeoPass = NULL, $vimeoVideoId = NULL) {
+  public function __construct($params = []) {
+    // Add default and save the params for further use.
+    $params = $this->getDefaultParams($params);
+    $this->params = $params;
+    $imageDir = $params['imageDir'];
+    $gifAnimDir = $params['gifAnimDir'];
+    print "gifanimdir: " . $params['gifAnimDir'];
     // Set a global screenshot count.
     global $_screenShotCount;
     $_screenShotCount = 0;
     // Get current vendor dir.
     $reflection = new \ReflectionClass(ClassLoader::class);
     $vendorDir = dirname(dirname($reflection->getFileName()));
-    // Assume root dir.
-    $rootDir = str_replace('/vendor', '', $vendorDir);
     $packageDir = $vendorDir . '/farald/gifreport';
     $this->imageDir = $imageDir;
     $this->gifAnimDir = $gifAnimDir;
     $this->fontsDir = $packageDir . '/fonts/';
-    print_r([
-      'filePath' => $this->imageDir,
-      'filePathAnim' => $this->gifAnimDir,
-      'fontsDir' => $this->fontsDir,
-    ]);
+  }
+
+  /**
+   * Apply any default parameters.
+   */
+  public function getDefaultParams($config) {
+    print_r($config);
+    $default = [
+      'imageDir' => NULL,
+      'gifAnimDir' => NULL,
+      'vimeoDir' => NULL,
+      'vimeoUser' => NULL,
+      'vimeoPass' => NULL,
+      'vimeoVideoId' => NULL,
+      'projectTitle' => 'TEST TITLE'
+    ];
+    $parameters = $config + $default;
+    // Add a simple internal on/off for vimeo.
+    if (empty($params['imageDir'])) {
+      throw new \Exception("
+      GifReport imageDir parameter cannot be empty.
+      Please configure imageDir parameter in your behat.yml to an empty
+      directory with write access for PHP. Refer to the manual for further
+      instructions.
+      ");
+    }
+    return $parameters;
   }
 
   /**
@@ -154,7 +170,7 @@ class GifReportContext extends RawMinkContext implements Context {
     $image = Image::open($filePath . '/' . $fileName)
       ->crop(0, 0, 1440, 1000)
       ->rectangle(0, 0, 1440, 1000, 0xffffff, TRUE)
-      ->write($this->fontsDir . 'OpenSans-Bold.ttf', strtoupper($this->docTitle), 30, 80, 25, 0, 0x333333)
+      ->write($this->fontsDir . 'OpenSans-Bold.ttf', strtoupper($this->params['projectTitle']), 30, 80, 25, 0, 0x333333)
       ->write($this->fontsDir . 'OpenSans-Bold.ttf', strtoupper($this->featureName), 30, 150, 18, 0, 0x333333)
       ->write($this->fontsDir . 'OpenSans-Regular.ttf', $description, 30, 200, 16, 0, 0x333333)
       ->rectangle(0, 900, 1440, 1000, 0xdddddd, TRUE)
@@ -165,7 +181,6 @@ class GifReportContext extends RawMinkContext implements Context {
       ->write($this->fontsDir . 'OpenSans-Regular.ttf', "0-$this->stepPercentage % INIT SETUP", 30, 970, 12, 0, 0x444444)
       ->save($filePath . '/' . $fileName);
     $_screenShotCount++;
-
   }
 
   /**
