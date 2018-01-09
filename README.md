@@ -1,6 +1,6 @@
 # Behat gif report
 
-Enables you to render gif images of every step in your test run, and then compiles it into a gif animation. This can again be rendered to an avi movie using ffmpeg.
+For behat 3. Enables you to render gif images of every step in your test run, and then compiles it into a gif animation. This can again be rendered to an avi movie using ffmpeg.
 
 ### Installation
 
