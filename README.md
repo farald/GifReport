@@ -25,3 +25,8 @@ To enable, configure your list of contexts in `behat.yml`:
 ```
 
 The image dir should be an empty directory. It will be emptied at start of every behat run.
+
+Once the script has run, look in your images folder. It should contain images for every step that was run, except for
+`given` steps (`when` and `then' & `and` will all provide a screenshot).
+
+After a complete run, a gif compiled from the step images will reside in your anim directory.
