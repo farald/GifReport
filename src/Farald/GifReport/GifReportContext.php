@@ -71,7 +71,6 @@ class GifReportContext extends RawMinkContext implements Context {
    * Apply any default parameters.
    */
   public function getDefaultParams($config) {
-    print_r($config);
     $default = [
       'imageDir' => NULL,
       'gifAnimDir' => NULL,
