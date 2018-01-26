@@ -81,8 +81,9 @@ class GifReportContext extends RawMinkContext implements Context {
       'projectTitle' => 'TEST TITLE'
     ];
     $parameters = $config + $default;
+
     // Add a simple internal on/off for vimeo.
-    if (empty($params['imageDir'])) {
+    if (empty($parameters['imageDir'])) {
       throw new \Exception("
       GifReport imageDir parameter cannot be empty.
       Please configure imageDir parameter in your behat.yml to an empty
