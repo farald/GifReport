@@ -147,10 +147,6 @@ class GifReportContext extends RawMinkContext implements Context {
    * @throws \Exception
    */
   public function generateFrontPageScreenshot(AfterStepScope $scope) {
-    error_reporting(E_ALL);
-    ini_set('error_reporting', E_ALL);
-    ini_set('display_errors',1);
-    print "generating fp screenshot..";
     global $_screenShotCount;
     $description = $scope->getFeature()->getDescription();
     if (function_exists('xdebug_break')) {
@@ -165,7 +161,6 @@ class GifReportContext extends RawMinkContext implements Context {
     }
     //throw new \Exception($this->fontsDir . 'OpenSans-Regular.ttf');
     $this->saveScreenshot($fileName, $filePath);
-    print "attempting to open " . $filePath . '/' . $fileName;
     $image = Image::open($filePath . '/' . $fileName)
       ->crop(0, 0, 1440, 1000)
       ->rectangle(0, 0, 1440, 1000, 0xffffff, TRUE)
