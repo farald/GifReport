@@ -22,7 +22,10 @@ To enable, configure your list of contexts in `behat.yml`:
               imageDir: "/full/path/to/empty/dir"
               gifAnimDir: "/full/path/to/another/empty/dir"
               projectTitle: "En tittel"
-```
+              slackApiToken: "foo"
+              slackApiChannel: "#test-uploaded-results"
+              slackApiName: "Reports for Bullski"
+              ```
 
 The image dir should be an empty directory. It will be emptied at start of every behat run.
 

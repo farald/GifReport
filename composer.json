@@ -8,6 +8,7 @@
   "require": {
     "lunakid/anim-gif": "^1.3",
     "gregwar/image": "^2.0",
-    "behat/behat": "^3.0"
+    "behat/behat": "^3.0",
+    "wrapi/slack": "dev-master"
   }
 }
