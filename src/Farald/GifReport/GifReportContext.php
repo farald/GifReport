@@ -6,6 +6,7 @@ use Behat\Behat\Hook\Scope\AfterStepScope;
 use Behat\Behat\Hook\Scope\BeforeStepScope;
 use Behat\Mink\Driver\Selenium2Driver;
 use Behat\MinkExtension\Context\RawMinkContext;
+use CURLFile;
 use GifCreator\AnimGif;
 use Gregwar\Image\Image;
 use Composer\Autoload\ClassLoader;
@@ -40,31 +41,47 @@ class GifReportContext extends RawMinkContext implements Context {
   protected $doGenerateGifAnim = TRUE;
   protected $docTitle = "Test title";
 
+  const SETTINGS_SLACK_TOKEN = 'slackToken';
+  const SETTINGS_SLACK_CHANNEL = 'slackChannel';
+  const SETTINGS_GIF_DIR = 'gifAnimDir';
+  const SETTINGS_IMAGES_DIR = 'imageDir';
+  const SETTINGS_FONTS_DIR = 'fontsDir';
+  const SETTINGS_TITLE = 'projectTitle';
+
   /**
    * GifReportContext constructor.
    *
-   * @see getDefaultParams().
-   *
-   * @param $params
+   * @param array $params
    *   An array of parameters.
+   *
+   * @see getDefaultParams()
    */
-  public function __construct($params = []) {
+  public function __construct(array $params = []) {
     // Add default and save the params for further use.
     $params = $this->getDefaultParams($params);
-    $this->params = $params;
-    $imageDir = $params['imageDir'];
-    $gifAnimDir = $params['gifAnimDir'];
-    print "gifanimdir: " . $params['gifAnimDir'];
     // Set a global screenshot count.
+    global $_gifReportParams;
+    $_gifReportParams = $params;
     global $_screenShotCount;
-    $_screenShotCount = 0;
-    // Get current vendor dir.
+    if (!$_screenShotCount > 0) {
+      $_screenShotCount = 0;
+      $this->setparam('failCount', 0);
+    }
+    // Get current fonts dir.
     $reflection = new \ReflectionClass(ClassLoader::class);
     $vendorDir = dirname(dirname($reflection->getFileName()));
     $packageDir = $vendorDir . '/farald/gifreport';
-    $this->imageDir = $imageDir;
-    $this->gifAnimDir = $gifAnimDir;
-    $this->fontsDir = $packageDir . '/fonts/';
+    $this->setParam(self::SETTINGS_FONTS_DIR, $packageDir . '/fonts/');
+  }
+
+  public static function getParam($name) {
+    global $_gifReportParams;
+    return $_gifReportParams[$name];
+  }
+
+  public static function setParam($name, $value) {
+    global $_gifReportParams;
+    $_gifReportParams[$name] = $value;
   }
 
   /**
@@ -72,17 +89,14 @@ class GifReportContext extends RawMinkContext implements Context {
    */
   public function getDefaultParams($config) {
     $default = [
-      'imageDir' => NULL,
-      'gifAnimDir' => NULL,
-      'vimeoDir' => NULL,
-      'vimeoUser' => NULL,
-      'vimeoPass' => NULL,
-      'vimeoVideoId' => NULL,
-      'projectTitle' => 'TEST TITLE'
+      self::SETTINGS_IMAGES_DIR => NULL,
+      self::SETTINGS_GIF_DIR => NULL,
+      self::SETTINGS_TITLE => 'TEST TITLE',
+      'failCount' => 0,
     ];
     $parameters = $config + $default;
     // Add a simple internal on/off for vimeo.
-    if (empty($parameters['imageDir'])) {
+    if (empty($parameters[self::SETTINGS_IMAGES_DIR])) {
       throw new \Exception("
       GifReport imageDir parameter cannot be empty.
       Please configure imageDir parameter in your behat.yml to an empty
@@ -153,26 +167,24 @@ class GifReportContext extends RawMinkContext implements Context {
       return;
     }
     $fileName = str_pad($_screenShotCount, 3, '0', STR_PAD_LEFT) . '-' . time() . '-' . uniqid() . '.png';
-    $filePath = $this->imageDir;
+    $filePath = $this->getParam(self::SETTINGS_IMAGES_DIR);
     if (!is_writable($filePath)) {
-      throw new \Exception($this->fontsDir . 'OpenSans-Regular.ttf');
-
       mkdir($filePath);
     }
-    //throw new \Exception($this->fontsDir . 'OpenSans-Regular.ttf');
     $this->saveScreenshot($fileName, $filePath);
+    $fontsDir = $this->getParam(self::SETTINGS_FONTS_DIR);
     $image = Image::open($filePath . '/' . $fileName)
       ->crop(0, 0, 1440, 1000)
       ->rectangle(0, 0, 1440, 1000, 0xffffff, TRUE)
-      ->write($this->fontsDir . 'OpenSans-Bold.ttf', strtoupper($this->params['projectTitle']), 30, 80, 25, 0, 0x333333)
-      ->write($this->fontsDir . 'OpenSans-Bold.ttf', strtoupper($this->featureName), 30, 150, 18, 0, 0x333333)
-      ->write($this->fontsDir . 'OpenSans-Regular.ttf', $description, 30, 200, 16, 0, 0x333333)
+      ->write($fontsDir . 'OpenSans-Bold.ttf', strtoupper($this->getParam(self::SETTINGS_TITLE)), 30, 80, 25, 0, 0x333333)
+      ->write($fontsDir . 'OpenSans-Bold.ttf', strtoupper($this->featureName), 30, 150, 18, 0, 0x333333)
+      ->write($fontsDir . 'OpenSans-Regular.ttf', $description, 30, 200, 16, 0, 0x333333)
       ->rectangle(0, 900, 1440, 1000, 0xdddddd, TRUE)
       ->line(0, 900, 1440, 900, 0xbbbbbb)
       ->rectangle(1300, 900, 1440, 1000, 0xbbbbbb, TRUE)
       ->rectangle(0, 995, ((1300 / 100) * ($this->setupStepPercentage)) - 5, 1000, 0x666666, TRUE)
-      ->write($this->fontsDir . 'OpenSans-Regular.ttf', 'Feature: ' . $this->featureName, 30, 940, 16, 0, 0x444444)
-      ->write($this->fontsDir . 'OpenSans-Regular.ttf', "0-$this->stepPercentage % INIT SETUP", 30, 970, 12, 0, 0x444444)
+      ->write($fontsDir . 'OpenSans-Regular.ttf', 'Feature: ' . $this->getParam(self::SETTINGS_TITLE), 30, 940, 16, 0, 0x444444)
+      ->write($fontsDir . 'OpenSans-Regular.ttf', "0-$this->stepPercentage % INIT SETUP", 30, 970, 12, 0, 0x444444)
       ->save($filePath . '/' . $fileName);
     $_screenShotCount++;
   }
@@ -213,7 +225,7 @@ class GifReportContext extends RawMinkContext implements Context {
     }
     $_screenShotCount++;
     $fileName = str_pad($_screenShotCount, 3, '0', STR_PAD_LEFT) . '-' . time() . '-' . uniqid() . '.png';
-    $filePath = $this->imageDir;
+    $filePath = $this->getParam(self::SETTINGS_IMAGES_DIR);
     if (!is_writable($filePath)) {
       mkdir($filePath);
     }
@@ -222,22 +234,26 @@ class GifReportContext extends RawMinkContext implements Context {
     if (99 === $scope->getTestResult()->getResultCode()) {
       $result_color = 0x7c0101;
       $result_text = 'FAIL';
+      $failCount = $this->getParam('failCount');
+      $failCount++;
+      $this->setParam('failCount', $failCount);
     }
     $this->saveScreenshot($fileName, $filePath);
     // Load the file to write text.
     $text =
       $this->stepPercentage . ' % - ' .
       $this->stepKeyword . " " . $this->stepText;
+    $fontsDir = $this->getParam(self::SETTINGS_FONTS_DIR);
     Image::open($filePath . '/' . $fileName)
       ->crop(0, 0, 1440, 1000)
       ->rectangle(0, 900, 1440, 1000, 0xdddddd, TRUE)
       ->rectangle(1300, 900, 1440, 1000, $result_color, TRUE)
       ->rectangle(0, 995, ((1300 / 100) * $this->stepPercentage), 1000, $result_color, TRUE)
       ->rectangle(0, 995, ((1300 / 100) * $this->setupStepPercentage) - 5, 1000, 0x666666, TRUE)
-      ->write($this->fontsDir . 'OpenSans-Regular.ttf', $result_text, 1310, 970, 40, 0, 0xffffff)
+      ->write($fontsDir . 'OpenSans-Regular.ttf', $result_text, 1310, 970, 40, 0, 0xffffff)
       ->line(0, 900, 1440, 900, 0xbbbbbb)
-      ->write($this->fontsDir . 'OpenSans-Regular.ttf', 'Feature: ' . $this->featureName, 30, 940, 16, 0, 0x444444)
-      ->write($this->fontsDir . 'OpenSans-Regular.ttf', $text, 30, 970, 12, 0, $result_color)
+      ->write($fontsDir . 'OpenSans-Regular.ttf', 'Feature: ' . $this->featureName, 30, 940, 16, 0, 0x444444)
+      ->write($fontsDir . 'OpenSans-Regular.ttf', $text, 30, 970, 12, 0, $result_color)
       ->save($filePath . '/' . $fileName);
   }
 
@@ -246,7 +262,7 @@ class GifReportContext extends RawMinkContext implements Context {
    */
   public function clearScreenshotFolder() {
     if ($this->doClearDownloadFolder == TRUE) {
-      $filePath = $this->imageDir;
+      $filePath = $this->getParam(self::SETTINGS_IMAGES_DIR);
       $files = glob($filePath . '/*');
       foreach ($files as $file) {
         if (is_file($file)) {
@@ -257,6 +273,8 @@ class GifReportContext extends RawMinkContext implements Context {
   }
 
   /**
+   * Create animation.
+   *
    * When Xdebug is active, do not create animation.
    *
    * This will slow down the test execution a lot.
@@ -270,16 +288,87 @@ class GifReportContext extends RawMinkContext implements Context {
     if (function_exists('xdebug_break')) {
       return;
     }
-    $reflection = new \ReflectionClass(ClassLoader::class);
-    $vendorDir = dirname(dirname($reflection->getFileName()));
-    $filePath = $vendorDir . '/../tests/output';
-    $anim_path = $vendorDir . '/../tests/anim';
+
+    $filePath = self::getParam(self::SETTINGS_IMAGES_DIR);
+    $anim_path = self::getParam(self::SETTINGS_GIF_DIR);
 
     $frames = $filePath;
     $durations = [210];
     $anim = new AnimGif();
     $anim->create($frames, $durations);
-    $anim->save($anim_path . "animated.gif");
+    $anim->save($anim_path . "/animated.gif");
+  }
+
+  /**
+   * Create something to post to slack.
+   *
+   * @AfterSuite
+   */
+  public static function doCallSlack() {
+    $token = self::getParam(self::SETTINGS_SLACK_TOKEN);
+    $anim_file = self::getParam(self::SETTINGS_GIF_DIR) . '/animated.gif';
+    print $anim_file;
+    $video_file = self::getParam(self::SETTINGS_GIF_DIR) . '/animated.mp4';
+    $channel = self::getParam(self::SETTINGS_SLACK_CHANNEL);
+    print $video_file;
+    // We need a token.
+    if (!empty($token) && !empty($anim_file) && !empty($video_file) && !empty($channel)) {
+      print "attempting";
+      $header = array();
+      $header[] = 'Content-Type: multipart/form-data';
+      shell_exec(sprintf("ffmpeg -y -f gif -i %s %s 2>&1", $anim_file, $video_file));
+      $file = new CurlFile($video_file, 'video/mp4');
+      // Get git message.
+      exec(' git rev-list --pretty=oneline --max-count=1 HEAD', $gitOutput);
+
+      $message = substr(strstr($gitOutput[0], " "), 1);
+
+      // Get git branch.
+      exec('git rev-parse --abbrev-ref HEAD', $gitOutput2);
+      $branch = $gitOutput2[0];
+
+      $postitems = array(
+        'token' => $token,
+        'file' => $file,
+        'text' => $branch,
+        'title' => $branch,
+        'filename' => "testresult.mp4",
+        'filetype' => 'mp4',
+        'channels' => $channel,
+      );
+
+      $curl = curl_init();
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+      curl_setopt($curl, CURLOPT_URL, "https://slack.com/api/files.upload");
+      curl_setopt($curl, CURLOPT_POST, 1);
+      curl_setopt($curl, CURLOPT_POSTFIELDS, $postitems);
+      $data = curl_exec($curl);
+
+      // Comment additional information.
+      $data = json_decode($data, TRUE);
+      if ($data['ok']) {
+        $id = $data['file']['id'];
+        $postitems = array(
+          'token' => $token,
+          'comment' => 'Latest commit:' . $message,
+          'file' => $id,
+        );
+        curl_setopt($curl, CURLOPT_URL, "https://slack.com/api/files.comments.add");
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $postitems);
+        $data = curl_exec($curl);
+
+        $postitems = array(
+          'token' => $token,
+          'comment' => 'Fail count:' . self::getParam('failCount'),
+          'file' => $id,
+        );
+        curl_setopt($curl, CURLOPT_URL, "https://slack.com/api/files.comments.add");
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $postitems);
+        $data = curl_exec($curl);
+
+      }
+    }
   }
 
 }
