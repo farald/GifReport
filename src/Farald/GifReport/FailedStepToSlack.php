@@ -100,8 +100,8 @@ class FailedStepToSlack extends RawMinkContext
       $postitems = [
         'token' => $this->slackToken,
         'file' => $file = new CurlFile($this->screenShotPath . '/' . $filename, 'image/jpeg'),
-        'text' => $branch,
-        'title' => $branch,
+        'text' => 'Failed step in branch ' . $branch,
+        'title' => 'Failed step in branch ' . $branch,
         'filename' => "failed-step.jpg",
         'filetype' => 'jpg',
         'channels' => $this->slackChannel,
