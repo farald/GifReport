@@ -1,5 +1,5 @@
 {
-  "name": "farald/GifReport",
+  "name": "farald/gifreport",
   "autoload": {
     "psr-0" : {
       "Farald\\GifReport" : "src"
