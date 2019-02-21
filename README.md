@@ -5,7 +5,7 @@ For behat 3.
 - Renders gif images of every step in test (except for 'Given' steps)
 - Optional: Compile steps into a gif animation
 - Optional: Send snapshot of failed step to slack
-- Optional: Send movie of complete test run to slack
+- Optional: Send gif anim of complete test run to slack
 
 ### Installation
 
