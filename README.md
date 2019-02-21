@@ -1,6 +1,11 @@
 # Behat gif report
 
-For behat 3. Enables you to render gif images of every step in your test run, and then compiles it into a gif animation. This can again be rendered to an avi movie using ffmpeg.
+For behat 3. 
+
+- Renders gif images of every step in test (except for 'Given' steps)
+- Optional: Compile steps into a gif animation
+- Optional: Send snapshot of failed step to slack
+- Optional: Send movie of complete test run to slack
 
 ### Installation
 
@@ -27,9 +32,10 @@ To enable, configure your list of contexts in `behat.yml`:
               slackPostAs: "Reports"
               ```
 
-The image dir should be an empty directory. It will be emptied at start of every behat run.
+imageDir and gifAnimDir should be empty directories. It will be emptied at start of every behat run.
+projectTitle is used primarily as title for the images
 
-Once the script has run, look in your images folder. It should contain images for every step that was run, except for
-`given` steps (`when` and `then' & `and` will all provide a screenshot).
+Once the script has run, your imageDir folder should contain images for every step that was run, except for
+`given` steps (`when`, `then' & `and` will all provide a screenshot).
 
 After a complete run, a gif compiled from the step images will reside in your anim directory.
