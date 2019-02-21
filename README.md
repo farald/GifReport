@@ -30,7 +30,7 @@ To enable, configure your list of contexts in `behat.yml`:
               slackApiToken: "foo"
               slackChannel: "#test-uploaded-results"
               slackPostAs: "Reports"
-              ```
+```
 
 imageDir and gifAnimDir should be empty directories. It will be emptied at start of every behat run.
 projectTitle is used primarily as title for the images
